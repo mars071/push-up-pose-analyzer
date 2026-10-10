@@ -1,0 +1,31 @@
+# Contributing guidelines
+
+## What type of pull request do we accept into MediaPipe Samples repository?
+
+* Bug fixes
+* UI improvements
+* Documentation fixes
+
+Ensure you have signed the [Contributor License Agreement (CLA)](https://cla.developers.google.com/clas). See types below.
+
+## How to become a contributor and submit your own code
+
+### Contributor License Agreements
+
+We'd love to accept your patches! Before we can take them, we have to jump a couple of legal hurdles.
+
+Please fill out either the individual or corporate Contributor License Agreement (CLA).
+
+  * If you are an individual writing original source code and you're sure you own the intellectual property, then you'll need to sign an [individual CLA](https://cla.developers.google.com/about/google-individual).
+  * If you work for a company that wants to allow you to contribute your work, then you'll need to sign a [corporate CLA](https://cla.developers.google.com/about/google-corporate).
+
+Follow either of the two links above to access the appropriate CLA and instructions for how to sign and return it. Once we receive it, we'll be able to accept your pull requests.
+
+***NOTE***: Only original source code from you and other people that have signed the CLA can be accepted into the main repository.
+
+### Contributing code
+
+If you have bug fixes and documentation fixes to MediaPipe, send us your pull requests! For those
+just getting started, GitHub has a [howto](https://docs.github.com/en/pull-requests/reference/pull-requests).
+
+MediaPipe team members will be assigned to review your pull requests. Once the bug/documentation fixes are verified, a MediaPipe team member will acknowledge your contribution in the pull request comments, manually merge the fixes into our internal codebase upstream, and apply the `to be closed` label to the pull request. These fixes will later be pushed to GitHub in the next release, and a MediaPipe team member will then close the pull request.

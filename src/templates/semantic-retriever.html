@@ -1,0 +1,108 @@
+<div class="task-container">
+  <!-- Controls on Left -->
+  <div class="controls-panel">
+    <div class="section-title">Model Selection</div>
+    <div id="model-selector-container"></div>
+    <div class="divider"></div>
+
+    <div class="status-group">
+      <div id="status-message" class="status-message">Select a .litertlm model to begin</div>
+      <div id="inference-time" class="inference-time">Inference Time: - ms</div>
+    </div>
+  </div>
+
+  <!-- Output on Right -->
+  <div class="output-panel">
+    <div class="output-header">
+      <div>
+        <h2>Semantic Retriever</h2>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <!-- Step 1: Index Sample Images -->
+      <div class="retriever-section-card">
+        <div class="retriever-step-header">
+          <div class="retriever-step-title">
+            <span class="step-number-badge">1</span>
+            <span>Index images into vector store</span>
+          </div>
+          <div class="retriever-step-actions">
+            <button id="btn-index" type="button" class="action-button" disabled>
+              <span class="material-icons">collections</span>
+              <span id="btn-index-label">Index 10 sample images</span>
+            </button>
+            <label class="sample-chip" style="cursor: pointer">
+              <span class="material-icons" style="font-size: 14px">add_photo_alternate</span>
+              <span>Add Custom Image</span>
+              <input type="file" id="add-custom-image-input" accept="image/*" style="display: none" />
+            </label>
+          </div>
+        </div>
+
+        <div id="index-gallery-grid" class="index-gallery-grid"></div>
+
+        <div id="index-progress-wrap" class="progress-container" style="display: none; margin-top: 10px">
+          <div id="index-progress-bar" class="progress-bar"></div>
+        </div>
+      </div>
+
+      <!-- Step 2: Semantic Search -->
+      <div class="retriever-section-card" style="margin-bottom: 0; flex: 1; display: flex; flex-direction: column">
+        <div class="retriever-step-header">
+          <div class="retriever-step-title">
+            <span class="step-number-badge">2</span>
+            <span>Search images</span>
+          </div>
+          <span
+            id="search-summary-meta"
+            style="font-size: 0.78rem; font-family: 'Roboto Mono', monospace; color: var(--text-secondary)"
+          ></span>
+        </div>
+
+        <div class="search-input-row">
+          <div class="search-input-wrapper">
+            <span class="material-icons">search</span>
+            <input
+              type="text"
+              id="query-input"
+              class="search-input"
+              placeholder="Search images by meaning… (e.g. a piece of fruit)"
+              disabled
+            />
+          </div>
+          <button id="btn-search" type="button" class="action-button" disabled>
+            <span class="material-icons">manage_search</span>
+            <span>Search</span>
+          </button>
+        </div>
+
+        <!-- 5 Suggestion Chips matching Android SemanticRetriever MainActivity.SUGGESTIONS -->
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+          <span style="font-size: 0.76rem; color: var(--text-secondary); font-weight: 500; margin-right: 4px">
+            Try queries:
+          </span>
+          <button type="button" class="sample-chip suggestion-chip" data-query="a piece of fruit" disabled>
+            a piece of fruit
+          </button>
+          <button type="button" class="sample-chip suggestion-chip" data-query="an animal" disabled>an animal</button>
+          <button type="button" class="sample-chip suggestion-chip" data-query="something to drink" disabled>
+            something to drink
+          </button>
+          <button type="button" class="sample-chip suggestion-chip" data-query="a vacation spot" disabled>
+            a vacation spot
+          </button>
+          <button type="button" class="sample-chip suggestion-chip" data-query="a vehicle" disabled>a vehicle</button>
+        </div>
+
+        <!-- Ranked Results -->
+        <div id="results-list" class="search-results-list">
+          <div class="no-results">
+            Index the sample images above, then enter a query or click a suggestion chip to retrieve the top matching
+            images.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

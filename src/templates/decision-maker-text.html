@@ -1,0 +1,769 @@
+<div class="dt-root">
+  <div id="dt-kind-toggle" class="dt-mode-tabs"></div>
+
+  <!-- 1. Input ------------------------------------------------------------ -->
+  <section id="dt-input-card" class="dt-card dt-step">
+    <div class="dt-step-header">
+      <span class="dt-step-num">1</span>
+      <div class="dt-step-title">Input</div>
+      <span id="dt-token-badge" class="dt-token-badge">~0 tokens</span>
+    </div>
+
+    <div class="dt-scenario-row">
+      <label class="dt-inline-label" for="dt-preset-select">Scenario</label>
+      <select id="dt-preset-select" class="dt-field"></select>
+    </div>
+
+    <textarea id="dt-input" class="dt-field" rows="3" placeholder="Type or paste the text to evaluate..."></textarea>
+
+    <div id="dt-candidates-group" class="dt-candidates-group">
+      <div class="dt-section-label">Try an example</div>
+      <div id="dt-candidates" class="dt-chips-container"></div>
+    </div>
+  </section>
+
+  <!-- 2. Decision --------------------------------------------------------- -->
+  <section id="dt-result-card" class="dt-card dt-step">
+    <div class="dt-step-header">
+      <span class="dt-step-num">2</span>
+      <div class="dt-step-title">Decision</div>
+      <span id="dt-result-meta" class="dt-result-meta"></span>
+      <button id="dt-evaluate" class="dt-action-btn dt-action-btn-sm" disabled title="Evaluate again">
+        <span class="material-icons">refresh</span> Re-run
+      </button>
+    </div>
+
+    <div id="dt-result-pending" class="dt-pending">
+      <div id="dt-pending-spinner" class="dt-spinner"></div>
+      <span id="dt-pending-icon" class="material-icons dt-pending-icon"></span>
+      <div id="dt-pending-title" class="dt-pending-title">Initializing task...</div>
+      <div id="dt-pending-sub" class="dt-pending-sub"></div>
+    </div>
+
+    <div id="dt-result-body" style="display: none">
+      <div id="dt-headline" class="dt-headline dt-muted">-</div>
+      <div id="dt-subtitle" class="dt-subtitle"></div>
+      <div id="dt-bars"></div>
+      <div id="dt-poly-results" class="poly-decisions-grid" style="display: none"></div>
+    </div>
+  </section>
+
+  <!-- 3. Configuration ---------------------------------------------------- -->
+  <section id="dt-config-card" class="dt-card dt-step dt-step-collapsible">
+    <button type="button" id="dt-config-toggle" class="dt-step-header dt-step-header-btn" aria-expanded="false">
+      <span class="dt-step-num">3</span>
+      <div class="dt-step-title">
+        Configuration
+        <span id="dt-config-summary" class="dt-step-sub"></span>
+      </div>
+      <span id="dt-config-chevron" class="material-icons dt-chevron">expand_more</span>
+    </button>
+
+    <div id="dt-config-body" style="display: none">
+      <p id="dt-kind-help" class="dt-kind-help"></p>
+
+      <div id="dt-form-card">
+        <div id="dt-polymorphic-fields">
+          <div id="dt-poly-editor" class="dt-poly-editor">
+            <label class="dt-label" for="dt-poly-context">
+              Domain context <span class="dt-hint">prepended to every question</span>
+            </label>
+            <input
+              id="dt-poly-context"
+              class="dt-field"
+              type="text"
+              placeholder="e.g. Enterprise customer support ticket router."
+            />
+
+            <div class="dt-label" style="margin-top: 14px">
+              Questions <span class="dt-hint">evaluated together in one call</span>
+            </div>
+            <div id="dt-poly-questions"></div>
+            <button type="button" id="dt-add-poly-question" class="dt-btn-sm" style="margin-top: 6px">
+              + Add question
+            </button>
+          </div>
+        </div>
+
+        <div id="dt-boolean-fields" style="display: none">
+          <label class="dt-label" for="dt-condition">
+            Condition <span class="dt-hint">a statement the model checks against the input text</span>
+          </label>
+          <textarea id="dt-condition" class="dt-field" rows="2"></textarea>
+
+          <div class="dt-two-col">
+            <div>
+              <label class="dt-label" for="dt-true-desc"
+                >Yes means <span class="dt-hint">optional · what a Yes looks like</span></label
+              >
+              <textarea id="dt-true-desc" class="dt-field" rows="2"></textarea>
+            </div>
+            <div>
+              <label class="dt-label" for="dt-false-desc"
+                >No means <span class="dt-hint">optional · what a No looks like</span></label
+              >
+              <textarea id="dt-false-desc" class="dt-field" rows="2"></textarea>
+            </div>
+          </div>
+
+          <label class="dt-label" for="dt-threshold">
+            Threshold <span class="dt-hint">answer Yes when P(yes) ≥ <b id="dt-threshold-value">0.50</b></span>
+          </label>
+          <input id="dt-threshold" type="range" min="0.05" max="0.95" step="0.05" value="0.5" class="range-slider" />
+        </div>
+
+        <div id="dt-list-fields" style="display: none">
+          <label class="dt-label" for="dt-instructions"
+            >Instructions <span class="dt-hint">the question to answer</span></label
+          >
+          <input id="dt-instructions" class="dt-field" type="text" />
+          <div class="dt-label">
+            <span id="dt-items-title">Options</span> <span id="dt-items-hint" class="dt-hint"></span>
+          </div>
+          <div id="dt-items"></div>
+          <button id="dt-add-item" class="dt-link-btn">
+            <span class="material-icons">add</span><span id="dt-add-label">Add option</span>
+          </button>
+        </div>
+
+        <div id="dt-single-context-group" style="display: none">
+          <label class="dt-label" for="dt-context"
+            >Context <span class="dt-hint">optional · background that helps the model</span></label
+          >
+          <input
+            id="dt-context"
+            class="dt-field"
+            type="text"
+            placeholder="e.g. Screening emails sent to a company inbox."
+          />
+        </div>
+
+        <div class="dt-actions">
+          <div class="dt-actions-left">
+            <button id="dt-reset" class="dt-link-btn">
+              <span class="material-icons">restart_alt</span>Restore preset
+            </button>
+            <button id="dt-open-json" class="dt-link-btn" title="Open this schema or question in the JSON tab">
+              <span class="material-icons">data_object</span>Edit as JSON
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="dt-json-card" style="display: none">
+        <p class="dt-json-help">
+          Edit the request as JSON: a <code>ClassifierSchema</code> with <code>questions</code> (<code>binary</code>,
+          <code>categorical</code>, <code>ordinal</code>), or a single question for <code>evaluateBoolean</code> /
+          <code>evaluateChoice</code> / <code>evaluateScore</code>. The text to evaluate comes from the Input box above;
+          an <code>input</code> field pasted here is moved there.
+        </p>
+        <textarea
+          id="dt-json-text"
+          class="dt-field dt-json-text"
+          spellcheck="false"
+          placeholder='{ "context": "...", "questions": [{ "id": "...", "type": "binary", "prompt": "..." }] }'
+        ></textarea>
+        <div id="dt-json-error" class="dt-json-error"></div>
+        <div class="dt-actions">
+          <div class="dt-actions-left">
+            <button id="dt-json-example" class="dt-link-btn">
+              <span class="material-icons">auto_fix_high</span>Insert example
+            </button>
+            <button id="dt-json-clear" class="dt-link-btn">Clear</button>
+            <button
+              id="dt-json-to-form"
+              class="dt-link-btn"
+              title="Open a schema in Multi-Question, or one question in its tab"
+            >
+              <span class="material-icons">edit_note</span>Load into form
+            </button>
+          </div>
+          <button id="dt-json-evaluate" class="dt-action-btn dt-action-btn-sm" disabled>
+            <span class="material-icons">psychology</span> Evaluate
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    .dt-root {
+      width: 100%;
+      max-width: 860px;
+    }
+    .dt-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 18px;
+      margin-bottom: 12px;
+      background: var(--surface);
+    }
+
+    /* ---- Step boxes -------------------------------------------------- */
+    .dt-step-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: -4px 0 12px;
+    }
+    .dt-step-header-btn {
+      width: 100%;
+      margin: -4px 0 0;
+      padding: 0;
+      border: none;
+      background: none;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .dt-step-collapsible.open .dt-step-header-btn {
+      margin-bottom: 12px;
+    }
+    .dt-step-num {
+      flex: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dt-step-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .dt-step-sub {
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+    .dt-chevron {
+      color: var(--text-secondary);
+      transition: transform 0.2s;
+    }
+    .dt-step-collapsible.open .dt-chevron {
+      transform: rotate(180deg);
+    }
+    .dt-step-header-btn:hover .dt-step-title {
+      color: var(--primary);
+    }
+
+    /* ---- Result / pending pane --------------------------------------- */
+    .dt-result-meta {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .dt-result-meta.busy {
+      color: var(--primary);
+    }
+    .dt-pending {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 28px 16px;
+      min-height: 120px;
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-color, #f8f9fa);
+    }
+    .dt-pending.error {
+      border-color: #fad2cf;
+      background: #fef7f6;
+    }
+    .dt-pending-icon {
+      font-size: 36px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .dt-pending.error .dt-pending-icon {
+      color: #c5221f;
+    }
+    .dt-pending-title {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+    .dt-pending-sub {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      max-width: 520px;
+      line-height: 1.4;
+    }
+    .dt-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e8eaed;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: dt-spin 0.9s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes dt-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    #dt-result-body {
+      transition: opacity 0.2s;
+    }
+    #dt-result-body.dt-dim {
+      opacity: 0.45;
+    }
+
+    /* ---- Shared form bits -------------------------------------------- */
+    .dt-label {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin: 12px 0 6px;
+    }
+    .dt-section-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin: 10px 0 6px;
+    }
+    .dt-inline-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    .dt-scenario-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .dt-scenario-row select {
+      flex: 1;
+    }
+    .dt-poly-editor {
+      margin-top: 4px;
+    }
+    .poly-question-block {
+      padding: 10px 0 12px;
+      border-bottom: 1px dashed var(--border-color);
+    }
+    .poly-question-block:last-child {
+      border-bottom: none;
+    }
+    .poly-question-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .poly-type-badge {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: #e8f0fe;
+      color: #1967d2;
+      border: 1px solid #d2e3fc;
+      white-space: nowrap;
+    }
+    .poly-id-input {
+      width: 170px !important;
+      padding: 7px 10px !important;
+      font-size: 0.85rem !important;
+    }
+    .poly-type-select {
+      width: 185px !important;
+      padding: 7px 10px !important;
+      font-size: 0.85rem !important;
+    }
+    .poly-prompt-input {
+      margin-bottom: 8px;
+    }
+    .poly-opts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .poly-opt-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .poly-opt-label {
+      flex: 1;
+      min-width: 120px;
+    }
+    .poly-opt-desc {
+      flex: 2.2;
+    }
+    .dt-btn-remove {
+      background: var(--bg-color, #fff);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 7px 11px;
+      font-size: 0.8rem;
+      line-height: 1;
+    }
+    .dt-btn-remove:hover {
+      background: #fce8e6;
+      color: #c5221f;
+      border-color: #fad2cf;
+    }
+    .dt-btn-sm {
+      background: #f1f3f4;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .dt-btn-sm:hover {
+      background: #e8eaed;
+    }
+    .dt-candidates-group {
+      margin-top: 10px;
+    }
+    .dt-chips-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 6px;
+    }
+    .dt-chip {
+      background: #f8f9fa;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+      line-height: 1.35;
+      max-width: 100%;
+    }
+    .dt-chip:hover {
+      background: #e8f0fe;
+      border-color: #d2e3fc;
+      color: #1967d2;
+    }
+    .dt-chip.active {
+      background: #e8f0fe;
+      border-color: var(--primary);
+      color: #1967d2;
+      font-weight: 500;
+    }
+    .dt-token-badge {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 10px;
+      background: #e6f4ea;
+      color: #137333;
+      border: 1px solid #ceead6;
+      white-space: nowrap;
+    }
+    .dt-hint {
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+      margin-left: 4px;
+    }
+    .dt-mode-tabs {
+      margin-bottom: 12px;
+    }
+    .dt-kind-help {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 8px 2px 12px;
+      line-height: 1.4;
+    }
+    .dt-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .dt-two-col {
+        grid-template-columns: 1fr;
+      }
+      .dt-scenario-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+    .dt-field {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Roboto', sans-serif;
+      font-size: 0.88rem;
+      resize: vertical;
+    }
+    .dt-field:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .dt-item {
+      display: grid;
+      grid-template-columns: 30% 1fr 32px;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .dt-icon-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+    .dt-icon-btn:hover {
+      background: #f1f3f4;
+      color: var(--text-main);
+    }
+    .dt-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      background: none;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+    .dt-link-btn .material-icons {
+      font-size: 18px;
+    }
+    .dt-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+    }
+    .dt-actions-left {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .dt-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 24px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .dt-action-btn-sm {
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      gap: 6px;
+    }
+    .dt-action-btn .material-icons {
+      font-size: 18px;
+    }
+    .dt-action-btn-sm .material-icons {
+      font-size: 16px;
+    }
+    .dt-action-btn:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+    .dt-action-btn:disabled {
+      background: var(--border-color);
+      cursor: not-allowed;
+    }
+
+    /* ---- Result rendering -------------------------------------------- */
+    .dt-headline {
+      font-size: 1.55rem;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+    .dt-muted {
+      color: var(--text-secondary);
+    }
+    .dt-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin: 2px 0 8px;
+      min-height: 1em;
+    }
+    .dt-bar {
+      display: grid;
+      grid-template-columns: 35% 1fr 56px;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 0;
+    }
+    .dt-bar-label {
+      font-size: 0.85rem;
+      color: var(--text-main);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dt-bar.hl .dt-bar-label {
+      font-weight: 600;
+    }
+    .dt-bar-track {
+      height: 8px;
+      background: #f1f3f4;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .dt-bar-fill {
+      height: 100%;
+      background: #bdc1c6;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+    .dt-bar.hl .dt-bar-fill {
+      background: var(--primary);
+    }
+    .dt-bar-value {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.8rem;
+      text-align: right;
+      color: var(--text-main);
+    }
+    .poly-decisions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .poly-decision-card {
+      background: var(--bg-color, #f8f9fa);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .poly-decision-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .poly-decision-id {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .poly-decision-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+    .poly-prob-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      margin-bottom: 4px;
+    }
+    .poly-prob-label {
+      width: 105px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-secondary);
+    }
+    .poly-prob-label.winner {
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .poly-prob-track {
+      flex: 1;
+      height: 6px;
+      background: #e8eaed;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .poly-prob-fill {
+      height: 100%;
+      background: #bdc1c6;
+      border-radius: 3px;
+    }
+    .poly-prob-fill.winner {
+      background: var(--primary);
+    }
+    .poly-prob-pct {
+      width: 44px;
+      text-align: right;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.73rem;
+      color: var(--text-secondary);
+    }
+
+    /* ---- JSON editor ------------------------------------------------- */
+    .dt-json-help {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #5f6368);
+      margin: 0 0 12px;
+      line-height: 1.4;
+    }
+    .dt-json-help code {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.8rem;
+    }
+    .dt-json-text {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 320px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.8rem;
+      white-space: pre;
+    }
+    .dt-json-error {
+      color: #d93025;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+      margin: 8px 0;
+    }
+  </style>
+</div>

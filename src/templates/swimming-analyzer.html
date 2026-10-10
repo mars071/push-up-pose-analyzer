@@ -1,0 +1,232 @@
+<div class="task-container">
+  <div class="output-panel">
+    <div class="output-header">
+      <h2>Push Up Pose Analyzer</h2>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button id="download-data" class="action-button" style="display: none; margin: 0">
+          <span class="material-icons">table_chart</span> Download Data (.zip)
+        </button>
+        <button id="download-all" class="action-button" style="display: none; margin: 0">
+          <span class="material-icons">download</span> Download All Frames (.zip)
+        </button>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <div id="upload-stage" class="upload-dropzone">
+        <div class="dropzone-content">
+          <span class="material-icons large-icon">videocam</span>
+          <p>Drag &amp; drop or click to upload a push-up video</p>
+          <p class="swim-hint">A frame is extracted every 0.125s and marked with a pose skeleton.</p>
+          <input type="file" id="video-upload" accept="video/*" />
+        </div>
+      </div>
+
+      <div id="progress" class="status-message swim-progress" style="display: none"></div>
+
+      <div id="report" class="report" style="display: none"></div>
+
+      <div id="results" class="swim-results"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .swim-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    padding: 16px 20px 32px;
+  }
+  .swim-frame {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .swim-frame canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #000;
+  }
+  .swim-frame-label {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .swim-rep-header {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid #00e676;
+    border-radius: var(--radius-md);
+  }
+  .swim-progress {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .swim-hint {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+  .report {
+    padding: 16px 20px;
+  }
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .report-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--text-primary);
+  }
+  .report-score {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .report-total {
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+  }
+  .report-grade {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .report-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .report-metric {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
+  }
+  .metric-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .metric-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .metric-score {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .metric-bar {
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .metric-bar-fill {
+    height: 100%;
+    background: #00e676;
+    border-radius: 999px;
+  }
+  .metric-grade {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .metric-summary {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 6px;
+  }
+  .metric-advice {
+    font-size: 13px;
+    color: var(--text-primary);
+    margin: 0 0 8px;
+  }
+  .metric-debug {
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-top: 1px dashed var(--border-color);
+    padding-top: 8px;
+  }
+  .metric-debug summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .metric-debug ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+  }
+  .metric-debug li {
+    margin: 3px 0;
+  }
+  .grade-excellent {
+    color: #00e676;
+    background: rgba(0, 230, 118, 0.12);
+  }
+  .grade-good {
+    color: #69f0ae;
+    background: rgba(105, 240, 174, 0.12);
+  }
+  .grade-fair {
+    color: #ffd54f;
+    background: rgba(255, 213, 79, 0.12);
+  }
+  .grade-poor {
+    color: #ff8a80;
+    background: rgba(255, 138, 128, 0.12);
+  }
+  .report-advice {
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+  }
+  .report-advice h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+  .report-advice ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .report-advice li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 4px 0;
+  }
+</style>
