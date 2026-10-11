@@ -30,6 +30,16 @@ const WEIGHTS = {
   tempo: 0.2,
 } as const;
 
+// Extension tolerance. With a straight upper arm (shoulder directly over the
+// elbow, tilt ≈ 0°) the elbow must reach ~180° to count as locked out, so a
+// shortfall really is a bent arm and we keep the strict target. In a standard
+// push-up the shoulder can sit slightly forward of the forearm, which leans the
+// upper arm by φ and makes a fully-extended arm read only 180° − φ; there we
+// relax the target by the lean (only past a small noise floor, and capped so an
+// extreme forward reach can't zero the metric out).
+const LEAN_TOLERANCE_DEG = 3;
+const MAX_TILT_DEG = 20;
+
 export type Grade = 'Excellent' | 'Good' | 'Fair' | 'Poor';
 
 export interface DebugStep {
@@ -53,6 +63,7 @@ export interface RepMetric {
   bottomElbowAngle: number | null;
   topElbowAngle: number | null;
   hipDeviation: number | null;
+  upperArmTilt: number | null;
   downTime: number | null;
   upTime: number | null;
 }
@@ -65,6 +76,7 @@ export interface FrameMetric {
   elbowAngle: number | null;
   hipAngle: number | null;
   hipDeviation: number | null;
+  upperArmTilt: number | null;
 }
 
 export interface PushupReport {
@@ -151,6 +163,15 @@ function computeFrameMetrics(frames: SegmentFrame[]): FrameMetric[] {
       }
     }
 
+    // Tilt of the upper arm (shoulder → elbow) away from vertical. 0° = the
+    // shoulder sits directly over the elbow; a forward shoulder leans it.
+    let upperArmTilt: number | null = null;
+    if (shoulder && elbow) {
+      const dx = Math.abs(elbow.x - shoulder.x);
+      const dy = Math.abs(elbow.y - shoulder.y);
+      upperArmTilt = (Math.atan2(dx, dy) * 180) / Math.PI;
+    }
+
     return {
       frame: f.frame,
       time: f.time,
@@ -159,6 +180,7 @@ function computeFrameMetrics(frames: SegmentFrame[]): FrameMetric[] {
       elbowAngle,
       hipAngle,
       hipDeviation,
+      upperArmTilt,
     };
   });
 }
@@ -167,7 +189,8 @@ function buildDepthMetric(perRep: RepMetric[]): MetricResult {
   const debug: DebugStep[] = [
     {
       label: 'Rule',
-      detail: 'Depth = lowest elbow angle in each rep. Score = (160 − angle) / 60 × 100, clamped to [0, 100] (angle ≤ 100° → 100, angle ≥ 160° → 0).',
+      detail:
+        'Depth = lowest elbow angle in each rep. Score = (160 − angle) / 60 × 100, clamped to [0, 100] (angle ≤ 100° → 100, angle ≥ 160° → 0).',
     },
   ];
   const scored = perRep.filter((r) => r.bottomElbowAngle != null);
@@ -226,7 +249,8 @@ function buildExtensionMetric(perRep: RepMetric[]): MetricResult {
   const debug: DebugStep[] = [
     {
       label: 'Rule',
-      detail: 'Extension = largest elbow angle in each rep (the top lockout). Target ≈ 180°. Score = 100 − (180 − angle) × 3, clamped to [0, 100].',
+      detail:
+        'Extension = largest elbow angle in each rep (the top lockout). A forward shoulder leans the upper arm by φ, so a fully-extended arm reads 180° − φ there; the target is 180° − φ when φ > 3° (capped at 20°), else 180°. Score = 100 − (target − angle) × 3, clamped to [0, 100].',
     },
   ];
   const scored = perRep.filter((r) => r.topElbowAngle != null);
@@ -245,10 +269,13 @@ function buildExtensionMetric(perRep: RepMetric[]): MetricResult {
   }
 
   const repScores = scored.map((r) => {
-    const s = clamp(100 - (180 - r.topElbowAngle!) * 3);
+    const tilt = r.upperArmTilt ?? 0;
+    const effectiveTilt = tilt <= LEAN_TOLERANCE_DEG ? 0 : Math.min(tilt, MAX_TILT_DEG);
+    const target = 180 - effectiveTilt;
+    const s = clamp(100 - (target - r.topElbowAngle!) * 3);
     debug.push({
       label: `Rep ${r.rep}`,
-      detail: `top elbow angle ${r.topElbowAngle!.toFixed(1)}° → score ${s.toFixed(1)}`,
+      detail: `top elbow angle ${r.topElbowAngle!.toFixed(1)}° · upper-arm tilt ${tilt.toFixed(1)}° → target ${target.toFixed(0)}° → score ${s.toFixed(1)}`,
     });
     return s;
   });
@@ -275,7 +302,7 @@ function buildExtensionMetric(perRep: RepMetric[]): MetricResult {
     weight: WEIGHTS.extension,
     score,
     grade: gradeFor(score),
-    summary: `Average top elbow angle ${avg.toFixed(0)}° (target 180°)`,
+    summary: `Average top elbow angle ${avg.toFixed(0)}°`,
     advice,
     debug,
   };
@@ -285,7 +312,8 @@ function buildAlignmentMetric(perRep: RepMetric[]): MetricResult {
   const debug: DebugStep[] = [
     {
       label: 'Rule',
-      detail: 'Alignment = how far the hip bends off the shoulder-ankle line (0° = perfectly straight plank). Score = 100 − deviation × 5, clamped to [0, 100].',
+      detail:
+        'Alignment = how far the hip bends off the shoulder-ankle line (0° = perfectly straight plank). Score = (30 − deviation) / 22 × 100, clamped to [0, 100] (≤ 8° → 100, ≥ 30° → 0).',
     },
   ];
   const scored = perRep.filter((r) => r.hipDeviation != null);
@@ -311,10 +339,10 @@ function buildAlignmentMetric(perRep: RepMetric[]): MetricResult {
   });
 
   const avg = mean(scored.map((r) => r.hipDeviation!))!;
-  const score = clamp(100 - avg * 5);
+  const score = clamp(((30 - avg) / 22) * 100);
   debug.push({
     label: 'Average',
-    detail: `mean deviation ${avg.toFixed(1)}° → score 100 − ${avg.toFixed(1)} × 5 = ${score.toFixed(1)}`,
+    detail: `mean deviation ${avg.toFixed(1)}° → score (30 − ${avg.toFixed(1)}) / 22 × 100 = ${score.toFixed(1)}`,
   });
 
   const advice =
@@ -346,9 +374,7 @@ function buildTempoMetric(perRep: RepMetric[]): MetricResult {
         'Tempo = average of two sub-scores: (1) down/up balance = min(down, up) / max(down, up) × 100; (2) consistency = 100 − CV × 200, where CV = std / mean of rep durations.',
     },
   ];
-  const withTimes = perRep.filter(
-    (r) => r.downTime != null && r.upTime != null && r.downTime > 0 && r.upTime > 0
-  );
+  const withTimes = perRep.filter((r) => r.downTime != null && r.upTime != null && r.downTime > 0 && r.upTime > 0);
   if (withTimes.length === 0) {
     debug.push({ label: 'Result', detail: 'No complete rep timings → score 0.' });
     return {
@@ -415,12 +441,21 @@ function buildTempoMetric(perRep: RepMetric[]): MetricResult {
 
 function buildRepMetrics(frames: FrameMetric[], segmentation: SegmentationResult): RepMetric[] {
   return segmentation.reps.map((rep) => {
-    const angles: number[] = [];
     const devs: number[] = [];
+    let bottomAngle = Infinity;
+    let topAngle = -Infinity;
+    let topArmTilt: number | null = null;
     for (let i = rep.startFrame; i <= rep.endFrame; i++) {
-      const a = frames[i]?.elbowAngle;
-      if (a != null) angles.push(a);
-      const d = frames[i]?.hipDeviation;
+      const f = frames[i];
+      const a = f?.elbowAngle;
+      if (a != null) {
+        if (a < bottomAngle) bottomAngle = a;
+        if (a > topAngle) {
+          topAngle = a;
+          topArmTilt = f?.upperArmTilt ?? null;
+        }
+      }
+      const d = f?.hipDeviation;
       if (d != null) devs.push(d);
     }
 
@@ -430,9 +465,10 @@ function buildRepMetrics(frames: FrameMetric[], segmentation: SegmentationResult
     // can sit ±1 frame off the raw minimum/maximum.
     return {
       rep: rep.rep,
-      bottomElbowAngle: angles.length > 0 ? Math.min(...angles) : null,
-      topElbowAngle: angles.length > 0 ? Math.max(...angles) : null,
+      bottomElbowAngle: bottomAngle === Infinity ? null : bottomAngle,
+      topElbowAngle: topAngle === -Infinity ? null : topAngle,
       hipDeviation: mean(devs),
+      upperArmTilt: topArmTilt,
       downTime: rep.middleTime - rep.startTime,
       upTime: rep.endTime - rep.middleTime,
     };
@@ -461,9 +497,7 @@ export function analyzePushup(
     buildTempoMetric(perRep),
   ];
 
-  const totalScore = Math.round(
-    metrics.reduce((acc, m) => acc + m.score * m.weight, 0)
-  );
+  const totalScore = Math.round(metrics.reduce((acc, m) => acc + m.score * m.weight, 0));
   const grade = gradeFor(totalScore);
 
   const advice: string[] = [];

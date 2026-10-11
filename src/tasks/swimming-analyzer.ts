@@ -59,21 +59,38 @@ function seekTo(video: HTMLVideoElement, time: number): Promise<void> {
 
 const LANDMARK_NAMES = [
   'nose',
-  'left_eye_inner', 'left_eye', 'left_eye_outer',
-  'right_eye_inner', 'right_eye', 'right_eye_outer',
-  'left_ear', 'right_ear',
-  'mouth_left', 'mouth_right',
-  'left_shoulder', 'right_shoulder',
-  'left_elbow', 'right_elbow',
-  'left_wrist', 'right_wrist',
-  'left_pinky', 'right_pinky',
-  'left_index', 'right_index',
-  'left_thumb', 'right_thumb',
-  'left_hip', 'right_hip',
-  'left_knee', 'right_knee',
-  'left_ankle', 'right_ankle',
-  'left_heel', 'right_heel',
-  'left_foot_index', 'right_foot_index',
+  'left_eye_inner',
+  'left_eye',
+  'left_eye_outer',
+  'right_eye_inner',
+  'right_eye',
+  'right_eye_outer',
+  'left_ear',
+  'right_ear',
+  'mouth_left',
+  'mouth_right',
+  'left_shoulder',
+  'right_shoulder',
+  'left_elbow',
+  'right_elbow',
+  'left_wrist',
+  'right_wrist',
+  'left_pinky',
+  'right_pinky',
+  'left_index',
+  'right_index',
+  'left_thumb',
+  'right_thumb',
+  'left_hip',
+  'right_hip',
+  'left_knee',
+  'right_knee',
+  'left_ankle',
+  'right_ankle',
+  'left_heel',
+  'right_heel',
+  'left_foot_index',
+  'right_foot_index',
 ];
 
 // Face landmarks (indices 0-10) are skipped when drawing; the ears (7, 8) are
@@ -180,6 +197,7 @@ function serializeAnalysis(report: PushupReport) {
       bottom_elbow_angle: r.bottomElbowAngle !== null ? Number(r.bottomElbowAngle.toFixed(1)) : null,
       top_elbow_angle: r.topElbowAngle !== null ? Number(r.topElbowAngle.toFixed(1)) : null,
       hip_deviation: r.hipDeviation !== null ? Number(r.hipDeviation.toFixed(1)) : null,
+      upper_arm_tilt: r.upperArmTilt !== null ? Number(r.upperArmTilt.toFixed(1)) : null,
       down_time: r.downTime !== null ? Number(r.downTime.toFixed(2)) : null,
       up_time: r.upTime !== null ? Number(r.upTime.toFixed(2)) : null,
     })),
@@ -191,6 +209,7 @@ function serializeAnalysis(report: PushupReport) {
       elbow_angle: f.elbowAngle !== null ? Number(f.elbowAngle.toFixed(2)) : null,
       hip_angle: f.hipAngle !== null ? Number(f.hipAngle.toFixed(2)) : null,
       hip_deviation: f.hipDeviation !== null ? Number(f.hipDeviation.toFixed(2)) : null,
+      upper_arm_tilt: f.upperArmTilt !== null ? Number(f.upperArmTilt.toFixed(1)) : null,
     })),
     advice: report.advice,
   };
@@ -315,6 +334,7 @@ export async function setupSwimmingAnalyzer(container: HTMLElement) {
   const results = container.querySelector<HTMLElement>('#results')!;
   const downloadAll = container.querySelector<HTMLButtonElement>('#download-all')!;
   const downloadData = container.querySelector<HTMLButtonElement>('#download-data')!;
+  const uploadNew = container.querySelector<HTMLButtonElement>('#upload-new')!;
 
   const markedBlobs: { name: string; blob: Blob }[] = [];
   const framesData: FrameRecord[] = [];
@@ -327,8 +347,30 @@ export async function setupSwimmingAnalyzer(container: HTMLElement) {
 
   uploadStage.addEventListener('click', () => videoUpload.click());
 
+  function resetToUpload() {
+    uploadStage.style.display = '';
+    progress.style.display = 'none';
+    reportContainer.innerHTML = '';
+    reportContainer.style.display = 'none';
+    results.innerHTML = '';
+    markedBlobs.length = 0;
+    framesData.length = 0;
+    cards.length = 0;
+    labels.length = 0;
+    segmentation = null;
+    report = null;
+    imageWidth = 0;
+    imageHeight = 0;
+    downloadAll.style.display = 'none';
+    downloadData.style.display = 'none';
+    uploadNew.style.display = 'none';
+  }
+
+  uploadNew.addEventListener('click', resetToUpload);
+
   async function processFile(file: File) {
     uploadStage.style.display = 'none';
+    uploadNew.style.display = 'none';
     results.innerHTML = '';
     reportContainer.innerHTML = '';
     reportContainer.style.display = 'none';
@@ -441,11 +483,11 @@ export async function setupSwimmingAnalyzer(container: HTMLElement) {
       renderReport(reportContainer, report);
 
       URL.revokeObjectURL(url);
-      progress.textContent =
-        `Done: ${markedBlobs.length} frames marked · ${segmentation.numReps} reps detected · total score ${report.totalScore}/100.`;
+      progress.textContent = `Done: ${markedBlobs.length} frames marked · ${segmentation.numReps} reps detected · total score ${report.totalScore}/100.`;
       if (markedBlobs.length > 0) {
         downloadAll.style.display = '';
         downloadData.style.display = '';
+        uploadNew.style.display = '';
       }
     } catch (err) {
       progress.textContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
@@ -501,7 +543,10 @@ export async function setupSwimmingAnalyzer(container: HTMLElement) {
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
       zip.file('landmarks.csv', buildCsv(framesData));
-      zip.file('landmarks.json', buildJson(framesData, imageWidth, imageHeight, segmentation ?? undefined, report ?? undefined));
+      zip.file(
+        'landmarks.json',
+        buildJson(framesData, imageWidth, imageHeight, segmentation ?? undefined, report ?? undefined)
+      );
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(zipBlob);

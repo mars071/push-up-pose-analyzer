@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { segmentReps } from '../src/tasks/rep-segmentation';
 import { analyzePushup } from '../src/tasks/pushup-analysis';
-import type { SegmentFrame } from '../src/tasks/rep-segmentation';
+import type { SegmentFrame, SegmentationResult } from '../src/tasks/rep-segmentation';
 
 // Shoulder height tracks the elbow angle (high at the top of a rep, low at the
 // bottom), matching the signal the segmentation expects.
@@ -114,4 +114,70 @@ test('debug mode exposes calculation steps for every metric', () => {
     expect(m.debug.length).toBeGreaterThan(0);
     expect(m.debug[0].label).toBe('Rule');
   }
+});
+
+// A single rep whose top frames put the shoulder and wrist at explicit x
+// positions. With `shoulderX = 0.5, wristX = 0.5416` the upper arm is vertical
+// (tilt 0°) and the ~168° elbow is a genuine bend; with `shoulderX = 0.5416,
+// wristX = 0.5` the shoulder sits forward of the forearm (tilt ~12°) so ~168°
+// is its natural full extension. Both read the same top elbow angle.
+function topFrame(time: number, shoulderX: number, wristX: number): SegmentFrame {
+  const sy = 0.4;
+  return {
+    frame: Math.round(time / 0.125),
+    time,
+    landmarks: [
+      { index: 11, x: shoulderX, y: sy, visibility: 1 },
+      { index: 13, x: 0.5, y: sy + 0.2, visibility: 1 },
+      { index: 15, x: wristX, y: sy + 0.4, visibility: 1 },
+      { index: 23, x: 0.5, y: sy + 0.3, visibility: 1 },
+      { index: 27, x: 0.5, y: sy + 0.5, visibility: 1 },
+    ],
+  };
+}
+
+function repFrames(shoulderTopX: number, wristTopX: number): SegmentFrame[] {
+  return [
+    topFrame(0.125, shoulderTopX, wristTopX),
+    frameAt(0.25, 95), // bottom
+    topFrame(0.375, shoulderTopX, wristTopX),
+  ];
+}
+
+// `analyzePushup` only needs the rep boundaries and phase labels from the
+// segmentation; hand-crafting it avoids the rep-segmentation smoothing, which
+// needs more frames than this minimal top/bottom/top sequence provides.
+function singleRep(frames: SegmentFrame[]): SegmentationResult {
+  const phases = ['start', 'middle', 'end'] as const;
+  return {
+    reps: [
+      {
+        rep: 1,
+        startFrame: 0,
+        middleFrame: 1,
+        endFrame: 2,
+        startTime: frames[0].time,
+        middleTime: frames[1].time,
+        endTime: frames[2].time,
+        frames: [0, 1, 2],
+      },
+    ],
+    frames: frames.map((f, i) => ({ rep: 1, phase: phases[i], elbowAngle: null, shoulderY: null })),
+    numReps: 1,
+    leadIn: null,
+    leadOut: null,
+  };
+}
+
+test('relaxes extension when the shoulder sits forward of the forearm', () => {
+  const straight = analyzePushup(repFrames(0.5, 0.5416), singleRep(repFrames(0.5, 0.5416)));
+  const forward = analyzePushup(repFrames(0.5416, 0.5), singleRep(repFrames(0.5416, 0.5)));
+
+  const straightExt = straight.metrics.find((m) => m.id === 'extension')!;
+  const forwardExt = forward.metrics.find((m) => m.id === 'extension')!;
+
+  // Same top elbow angle (~168°), but the forward shoulder makes it natural.
+  expect(forwardExt.score).toBeGreaterThan(90);
+  expect(straightExt.score).toBeLessThan(75);
+  expect(forwardExt.score).toBeGreaterThan(straightExt.score + 20);
 });
