@@ -169,44 +169,44 @@ function singleRep(frames: SegmentFrame[]): SegmentationResult {
   };
 }
 
-// A rep whose wrist stays planted at a fixed height while the shoulder drops.
-// `shoulderY` moves the shoulder up/down, `elbowY`/`wristX` set the elbow bend
-// (0.5 = straight, larger = more bent). This decouples shoulder height from
-// elbow angle, which the `frameAt` helper ties together.
-function plantedFrame(time: number, shoulderY: number, elbowY: number, wristX: number): SegmentFrame {
+// A rep whose wrist stays planted at (0.5, 0.85) while the shoulder drops. The
+// elbow is placed off the shoulder-wrist line so it reads a shallow (~121°)
+// angle even as the shoulder falls — modelling the real case where the elbow
+// landmark is unreliable but the shoulder height is not.
+function plantedFrame(time: number, shoulderY: number, elbowX: number, elbowY: number): SegmentFrame {
   return {
     frame: Math.round(time / 0.125),
     time,
     landmarks: [
       { index: 11, x: 0.5, y: shoulderY, visibility: 1 },
-      { index: 13, x: 0.5, y: elbowY, visibility: 1 },
-      { index: 15, x: wristX, y: 0.85, visibility: 1 },
+      { index: 13, x: elbowX, y: elbowY, visibility: 1 },
+      { index: 15, x: 0.5, y: 0.85, visibility: 1 },
       { index: 23, x: 0.5, y: shoulderY + 0.15, visibility: 1 },
       { index: 27, x: 0.5, y: shoulderY + 0.35, visibility: 1 },
     ],
   };
 }
 
-test('depth uses shoulder-height drop to rescue a shallow elbow angle', () => {
-  // Top: arm straight (elbow 180°, shoulder height 0.50). Bottom: elbow only
-  // ~120° (shallow) but the shoulder drops to 0.30 — a 40% height drop.
+test('depth normalizes shoulder drop by upper-arm length and rescues a shallow angle', () => {
+  // Top: arm straight (elbow 180°, upper-arm length 0.25, shoulder height
+  // 0.50). Bottom: elbow reads ~121° (shallow) but the shoulder drops to 0.25 —
+  // a drop equal to the full upper-arm length, which physically means ~90°.
   const cheating = [
-    plantedFrame(0.125, 0.35, 0.6, 0.5),
-    plantedFrame(0.25, 0.55, 0.65, 0.846),
-    plantedFrame(0.375, 0.35, 0.6, 0.5),
+    plantedFrame(0.125, 0.35, 0.5, 0.6),
+    plantedFrame(0.25, 0.6, 0.43, 0.72),
+    plantedFrame(0.375, 0.35, 0.5, 0.6),
   ];
   const cheatingReport = analyzePushup(cheating, singleRep(cheating));
   const cheatingDepth = cheatingReport.metrics.find((m) => m.id === 'depth')!;
-  // Shallow angle alone is (160 - 120) / 60 * 100 = 66.7, but the 40% shoulder
-  // drop yields a full height score and rescues the rep.
+  // The shallow angle alone is (160 - 121) / 60 * 100 ≈ 65, but a full
+  // upper-arm-length drop (drop / arm = 1.0) rescues it to a full score.
   expect(cheatingDepth.score).toBeGreaterThan(90);
 
-  // Same shallow elbow (~120°) but the shoulder never drops: only the angle
-  // counts, so the rep is scored low.
+  // Same shallow elbow, but the shoulder never drops: only the angle counts.
   const staticRep = [
-    plantedFrame(0.125, 0.55, 0.65, 0.846),
-    plantedFrame(0.25, 0.55, 0.65, 0.846),
-    plantedFrame(0.375, 0.55, 0.65, 0.846),
+    plantedFrame(0.125, 0.6, 0.43, 0.72),
+    plantedFrame(0.25, 0.6, 0.43, 0.72),
+    plantedFrame(0.375, 0.6, 0.43, 0.72),
   ];
   const staticReport = analyzePushup(staticRep, singleRep(staticRep));
   const staticDepth = staticReport.metrics.find((m) => m.id === 'depth')!;

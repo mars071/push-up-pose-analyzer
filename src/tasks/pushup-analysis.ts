@@ -40,11 +40,11 @@ const WEIGHTS = {
 const LEAN_TOLERANCE_DEG = 3;
 const MAX_TILT_DEG = 20;
 
-// Depth shoulder-drop thresholds. The shoulder's height above the planted hand
-// (wrist→shoulder vertical distance) shrinks as the body lowers; a full push-up
-// drops it by roughly half, so ≥ 40% counts as full depth and ≤ 10% as none.
-const DROP_RATIO_FULL = 0.4;
-const DROP_RATIO_NONE = 0.1;
+// Depth shoulder-drop reference. The shoulder's vertical drop toward the
+// planted hand, divided by the upper-arm length (shoulder→elbow distance at the
+// top of the rep), is a direct proxy for the elbow angle: a drop equal to the
+// upper-arm length means the elbow reached ~90°, and a larger drop means it went
+// past 90°. This is the height signal used to cross-check the elbow angle.
 
 export type Grade = 'Excellent' | 'Good' | 'Fair' | 'Poor';
 
@@ -84,6 +84,7 @@ export interface FrameMetric {
   hipAngle: number | null;
   hipDeviation: number | null;
   upperArmTilt: number | null;
+  upperArmLength: number | null;
   shoulderHeight: number | null;
 }
 
@@ -180,6 +181,14 @@ function computeFrameMetrics(frames: SegmentFrame[]): FrameMetric[] {
       upperArmTilt = (Math.atan2(dx, dy) * 180) / Math.PI;
     }
 
+    // Length of the upper arm (shoulder→elbow). It is a rigid segment, so it is
+    // read where it is most reliable — the top of the rep, when the arm is
+    // extended and roughly in-plane with the camera.
+    let upperArmLength: number | null = null;
+    if (shoulder && elbow) {
+      upperArmLength = Math.hypot(elbow.x - shoulder.x, elbow.y - shoulder.y);
+    }
+
     // Height of the shoulder above the planted hand (wrist), taken as the
     // vertical distance wrist→shoulder. This shrinks as the body lowers.
     let shoulderHeight: number | null = null;
@@ -196,6 +205,7 @@ function computeFrameMetrics(frames: SegmentFrame[]): FrameMetric[] {
       hipAngle,
       hipDeviation,
       upperArmTilt,
+      upperArmLength,
       shoulderHeight,
     };
   });
@@ -206,7 +216,7 @@ function buildDepthMetric(perRep: RepMetric[]): MetricResult {
     {
       label: 'Rule',
       detail:
-        'Depth = the deeper of two signals per rep: (1) elbow angle score = (160 − angle) / 60 × 100; (2) shoulder-drop score = (dropRatio − 0.1) / 0.3 × 100, where dropRatio = (top − bottom shoulder height) / top height. A shallow elbow angle is rescued when the shoulder actually dropped, and vice versa.',
+        "Depth = the deeper of two signals per rep: (1) elbow angle score = (160 − angle) / 60 × 100; (2) shoulder-drop score = drop / upper-arm length × 100, where drop is the shoulder's vertical fall toward the planted hand and upper-arm length is the shoulder→elbow distance at the top of the rep (drop = upper-arm length ⇒ elbow ≈ 90°). A shallow elbow angle is rescued when the shoulder actually dropped, and vice versa.",
     },
   ];
   const scored = perRep.filter((r) => r.bottomElbowAngle != null);
@@ -228,11 +238,11 @@ function buildDepthMetric(perRep: RepMetric[]): MetricResult {
     const angleScore = clamp(((160 - r.bottomElbowAngle!) / 60) * 100);
     let s = angleScore;
     if (r.shoulderDropRatio != null) {
-      const heightScore = clamp(((r.shoulderDropRatio - DROP_RATIO_NONE) / (DROP_RATIO_FULL - DROP_RATIO_NONE)) * 100);
+      const heightScore = clamp(r.shoulderDropRatio * 100);
       s = Math.max(angleScore, heightScore);
       debug.push({
         label: `Rep ${r.rep}`,
-        detail: `bottom angle ${r.bottomElbowAngle!.toFixed(1)}° → angle ${angleScore.toFixed(1)} · shoulder drop ${(r.shoulderDropRatio * 100).toFixed(0)}% → height ${heightScore.toFixed(1)} → depth ${s.toFixed(1)}`,
+        detail: `bottom angle ${r.bottomElbowAngle!.toFixed(1)}° → angle ${angleScore.toFixed(1)} · shoulder drop ${r.shoulderDropRatio.toFixed(2)}× arm → height ${heightScore.toFixed(1)} → depth ${s.toFixed(1)}`,
       });
     } else {
       debug.push({
@@ -473,6 +483,7 @@ function buildRepMetrics(frames: FrameMetric[], segmentation: SegmentationResult
     let topArmTilt: number | null = null;
     let heightTop = -Infinity;
     let heightBottom = Infinity;
+    let armLengthAtTop: number | null = null;
     for (let i = rep.startFrame; i <= rep.endFrame; i++) {
       const f = frames[i];
       const a = f?.elbowAngle;
@@ -487,7 +498,10 @@ function buildRepMetrics(frames: FrameMetric[], segmentation: SegmentationResult
       if (d != null) devs.push(d);
       const h = f?.shoulderHeight;
       if (h != null) {
-        if (h > heightTop) heightTop = h;
+        if (h > heightTop) {
+          heightTop = h;
+          armLengthAtTop = f?.upperArmLength ?? null;
+        }
         if (h < heightBottom) heightBottom = h;
       }
     }
@@ -496,10 +510,12 @@ function buildRepMetrics(frames: FrameMetric[], segmentation: SegmentationResult
     // anywhere in the rep. Reading a single start/middle frame is unreliable
     // because the segmentation's extrema are detected on the smoothed signal and
     // can sit ±1 frame off the raw minimum/maximum.
+    // The shoulder drop is normalized by the upper-arm length measured at the
+    // top of the rep: drop = upper-arm length ⇒ elbow ≈ 90°.
     const shoulderDropRatio =
-      heightTop === -Infinity || heightBottom === Infinity || heightTop <= 0
+      heightTop === -Infinity || heightBottom === Infinity || !armLengthAtTop || armLengthAtTop <= 0
         ? null
-        : (heightTop - heightBottom) / heightTop;
+        : (heightTop - heightBottom) / armLengthAtTop;
 
     return {
       rep: rep.rep,
