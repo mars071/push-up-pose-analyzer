@@ -208,6 +208,10 @@ body {
   position: relative;
 }
 
+.task-stage {
+  height: 100%;
+}
+
 .task-container {
   display: flex;
   height: 100%;
@@ -964,7 +968,7 @@ video {
   padding: 40px 20px;
   width: 100%;
   border: 2px dashed #ccc;
-  border-radius: var(--radius-md);
+  border-radius: 0;
   background: #f8f9fa;
   box-sizing: border-box;
   transition: all 0.2s;
