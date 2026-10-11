@@ -198,6 +198,7 @@ function serializeAnalysis(report: PushupReport) {
       top_elbow_angle: r.topElbowAngle !== null ? Number(r.topElbowAngle.toFixed(1)) : null,
       hip_deviation: r.hipDeviation !== null ? Number(r.hipDeviation.toFixed(1)) : null,
       upper_arm_tilt: r.upperArmTilt !== null ? Number(r.upperArmTilt.toFixed(1)) : null,
+      shoulder_drop_ratio: r.shoulderDropRatio !== null ? Number(r.shoulderDropRatio.toFixed(2)) : null,
       down_time: r.downTime !== null ? Number(r.downTime.toFixed(2)) : null,
       up_time: r.upTime !== null ? Number(r.upTime.toFixed(2)) : null,
     })),
@@ -210,6 +211,7 @@ function serializeAnalysis(report: PushupReport) {
       hip_angle: f.hipAngle !== null ? Number(f.hipAngle.toFixed(2)) : null,
       hip_deviation: f.hipDeviation !== null ? Number(f.hipDeviation.toFixed(2)) : null,
       upper_arm_tilt: f.upperArmTilt !== null ? Number(f.upperArmTilt.toFixed(1)) : null,
+      shoulder_height: f.shoulderHeight !== null ? Number(f.shoulderHeight.toFixed(4)) : null,
     })),
     advice: report.advice,
   };

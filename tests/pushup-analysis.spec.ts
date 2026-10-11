@@ -169,6 +169,50 @@ function singleRep(frames: SegmentFrame[]): SegmentationResult {
   };
 }
 
+// A rep whose wrist stays planted at a fixed height while the shoulder drops.
+// `shoulderY` moves the shoulder up/down, `elbowY`/`wristX` set the elbow bend
+// (0.5 = straight, larger = more bent). This decouples shoulder height from
+// elbow angle, which the `frameAt` helper ties together.
+function plantedFrame(time: number, shoulderY: number, elbowY: number, wristX: number): SegmentFrame {
+  return {
+    frame: Math.round(time / 0.125),
+    time,
+    landmarks: [
+      { index: 11, x: 0.5, y: shoulderY, visibility: 1 },
+      { index: 13, x: 0.5, y: elbowY, visibility: 1 },
+      { index: 15, x: wristX, y: 0.85, visibility: 1 },
+      { index: 23, x: 0.5, y: shoulderY + 0.15, visibility: 1 },
+      { index: 27, x: 0.5, y: shoulderY + 0.35, visibility: 1 },
+    ],
+  };
+}
+
+test('depth uses shoulder-height drop to rescue a shallow elbow angle', () => {
+  // Top: arm straight (elbow 180°, shoulder height 0.50). Bottom: elbow only
+  // ~120° (shallow) but the shoulder drops to 0.30 — a 40% height drop.
+  const cheating = [
+    plantedFrame(0.125, 0.35, 0.6, 0.5),
+    plantedFrame(0.25, 0.55, 0.65, 0.846),
+    plantedFrame(0.375, 0.35, 0.6, 0.5),
+  ];
+  const cheatingReport = analyzePushup(cheating, singleRep(cheating));
+  const cheatingDepth = cheatingReport.metrics.find((m) => m.id === 'depth')!;
+  // Shallow angle alone is (160 - 120) / 60 * 100 = 66.7, but the 40% shoulder
+  // drop yields a full height score and rescues the rep.
+  expect(cheatingDepth.score).toBeGreaterThan(90);
+
+  // Same shallow elbow (~120°) but the shoulder never drops: only the angle
+  // counts, so the rep is scored low.
+  const staticRep = [
+    plantedFrame(0.125, 0.55, 0.65, 0.846),
+    plantedFrame(0.25, 0.55, 0.65, 0.846),
+    plantedFrame(0.375, 0.55, 0.65, 0.846),
+  ];
+  const staticReport = analyzePushup(staticRep, singleRep(staticRep));
+  const staticDepth = staticReport.metrics.find((m) => m.id === 'depth')!;
+  expect(staticDepth.score).toBeLessThan(70);
+});
+
 test('relaxes extension when the shoulder sits forward of the forearm', () => {
   const straight = analyzePushup(repFrames(0.5, 0.5416), singleRep(repFrames(0.5, 0.5416)));
   const forward = analyzePushup(repFrames(0.5416, 0.5), singleRep(repFrames(0.5416, 0.5)));
