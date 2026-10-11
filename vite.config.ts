@@ -1,4 +1,4 @@
-import { createLogger, defineConfig, loadEnv, type Plugin } from 'vite';
+import { createLogger, defineConfig, type Plugin } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { copyWasmFiles } from './copy-wasm.js';
@@ -49,61 +49,13 @@ function mediapipeWasmPlugin(): Plugin {
   };
 }
 
-/**
- * Dev-only: serves large local model files (e.g. Decision Maker .task/.litertlm)
- * from LOCAL_MODELS_DIR at <base>/local-models/<file>. Set LOCAL_MODELS_DIR in
- * .env.local or the environment.
- */
-function localModelsPlugin(modelsDir: string | undefined): Plugin {
-  return {
-    name: 'local-models-plugin',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const match = req.url?.split('?')[0].match(/\/local-models\/([^/]+)$/);
-        if (!match) return next();
-        let name = '';
-        try {
-          name = decodeURIComponent(match[1]);
-        } catch {
-          // Malformed escape: treated as not found below.
-        }
-        // Only plain file names directly inside LOCAL_MODELS_DIR (no "..%2F" tricks).
-        const filePath = modelsDir && name && path.basename(name) === name ? path.join(modelsDir, name) : '';
-        // Never fall through to the SPA's index.html: the page would try to load HTML as a model.
-        if (!filePath || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-          res.statusCode = 404;
-          res.setHeader('Content-Type', 'text/plain');
-          res.end(modelsDir ? `Not found in LOCAL_MODELS_DIR: ${match[1]}` : 'LOCAL_MODELS_DIR is not set');
-          return;
-        }
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.setHeader('Content-Length', fs.statSync(filePath).size);
-        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-        fs.createReadStream(filePath).pipe(res);
-      });
-    },
-  };
-}
-
-export default defineConfig(({ mode }) => ({
-  base: '/mediapipe-samples-web/',
+export default defineConfig({
+  base: '/push-up-pose-analyzer/',
   customLogger,
 
-  plugins: [
-    mediapipeWasmPlugin(),
-    localModelsPlugin(process.env.LOCAL_MODELS_DIR || loadEnv(mode, process.cwd(), '').LOCAL_MODELS_DIR),
-  ],
+  plugins: [mediapipeWasmPlugin()],
   optimizeDeps: {
-    exclude: [
-      '@mediapipe/tasks-audio',
-      '@mediapipe/tasks-decision',
-      '@mediapipe/tasks-retrieval',
-      '@mediapipe/tasks-text',
-      '@mediapipe/tasks-vision',
-    ],
-  },
-  worker: {
-    format: 'es',
+    exclude: ['@mediapipe/tasks-vision'],
   },
   build: {
     sourcemap: false,
@@ -133,4 +85,4 @@ export default defineConfig(({ mode }) => ({
       'Cross-Origin-Resource-Policy': 'cross-origin',
     },
   },
-}));
+});

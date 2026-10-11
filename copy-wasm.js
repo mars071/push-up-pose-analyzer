@@ -5,11 +5,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
 const targets = [
-  { name: '@mediapipe/tasks-retrieval', entry: '@mediapipe/tasks-retrieval/retrieval_wasm_internal.js' },
   { name: '@mediapipe/tasks-vision', entry: '@mediapipe/tasks-vision/vision_wasm_internal.js' },
-  { name: '@mediapipe/tasks-audio', entry: '@mediapipe/tasks-audio/audio_wasm_internal.js' },
-  { name: '@mediapipe/tasks-text', entry: '@mediapipe/tasks-text/text_wasm_internal.js' },
-  { name: '@mediapipe/tasks-decision', entry: '@mediapipe/tasks-decision/decision_wasm_internal.js' },
 ];
 
 const destDir = path.resolve('public/wasm');

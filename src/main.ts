@@ -15,30 +15,10 @@
  */
 
 import './app_clean.css';
-import { setupObjectDetector, cleanupObjectDetector } from './tasks/object-detector';
-import { setupImageSegmenter, cleanupImageSegmenter } from './tasks/image-segmenter';
-import { setupAudioClassifier, cleanupAudioClassifier } from './tasks/audio-classifier';
-import { setupTextClassifier, cleanupTextClassifier } from './tasks/text-classifier';
-import { setupTextEmbedder, cleanupTextEmbedder } from './tasks/text-embedder';
-import { setupFaceDetector, cleanupFaceDetector } from './tasks/face-detector';
-import { setupFaceLandmarker, cleanupFaceLandmarker } from './tasks/face-landmarker';
-import { setupHandLandmarker, cleanupHandLandmarker } from './tasks/hand-landmarker';
-import { setupPoseLandmarker, cleanupPoseLandmarker } from './tasks/pose-landmarker';
-import { setupGestureRecognizer, cleanupGestureRecognizer } from './tasks/gesture-recognizer';
-import { setupLanguageDetector, cleanupLanguageDetector } from './tasks/language-detector';
-import { setupImageEmbedder, cleanupImageEmbedder } from './tasks/image-embedder';
-import { setupInteractiveSegmenter, cleanupInteractiveSegmenter } from './tasks/interactive-segmenter';
-import { setupHolisticLandmarker, cleanupHolisticLandmarker } from './tasks/holistic-landmarker';
-import { setupImageClassifier, cleanupImageClassifier } from './tasks/image-classifier';
-import { setupDecisionMaker, cleanupDecisionMaker } from './tasks/decision-maker';
-import { setupDinoGame, cleanupDinoGame } from './tasks/dino-game';
-import { cleanupUniversalEmbedder, setupUniversalEmbedder } from './tasks/universal-embedder.ts';
-import { cleanupSemanticRetriever, setupSemanticRetriever } from './tasks/semantic-retriever.ts';
 import { setupSwimmingAnalyzer, cleanupSwimmingAnalyzer } from './tasks/swimming-analyzer';
 
 import { renderSidebar } from './ui/sidebar';
 import { renderMobileNav } from './ui/mobile-nav';
-import { setupCoverPage, cleanupCoverPage } from './ui/cover-page';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -97,74 +77,10 @@ const mainContent = app.querySelector('#task-stage') as HTMLElement;
 
 // 4. Router Setup
 const routes = {
-  '/home': { setup: setupCoverPage, cleanup: cleanupCoverPage, label: 'Home' },
-  '/vision/object_detector': {
-    setup: setupObjectDetector,
-    cleanup: cleanupObjectDetector,
-    label: 'Object Detector',
-  },
-  '/vision/face_detector': { setup: setupFaceDetector, cleanup: cleanupFaceDetector, label: 'Face Detector' },
-  '/vision/face_landmarker': { setup: setupFaceLandmarker, cleanup: cleanupFaceLandmarker, label: 'Face Landmarker' },
-  '/vision/hand_landmarker': { setup: setupHandLandmarker, cleanup: cleanupHandLandmarker, label: 'Hand Landmarker' },
-  '/vision/pose_landmarker': { setup: setupPoseLandmarker, cleanup: cleanupPoseLandmarker, label: 'Pose Landmarker' },
-  '/vision/holistic_landmarker': {
-    setup: setupHolisticLandmarker,
-    cleanup: cleanupHolisticLandmarker,
-    label: 'Holistic Landmarker',
-  },
-  '/vision/image_classifier': {
-    setup: setupImageClassifier,
-    cleanup: cleanupImageClassifier,
-    label: 'Image Classifier',
-  },
-  '/vision/gesture_recognizer': {
-    setup: setupGestureRecognizer,
-    cleanup: cleanupGestureRecognizer,
-    label: 'Gesture Recognizer',
-  },
-  '/vision/interactive_segmenter': {
-    setup: setupInteractiveSegmenter,
-    cleanup: cleanupInteractiveSegmenter,
-    label: 'Interactive Segmenter',
-  },
-  '/vision/image_segmenter': {
-    setup: setupImageSegmenter,
-    cleanup: cleanupImageSegmenter,
-    label: 'Image Segmenter',
-  },
-  '/vision/image_embedder': { setup: setupImageEmbedder, cleanup: cleanupImageEmbedder, label: 'Image Embedder' },
   '/vision/swimming_analyzer': {
     setup: setupSwimmingAnalyzer,
     cleanup: cleanupSwimmingAnalyzer,
     label: 'Push Up Pose Analyzer',
-  },
-  '/audio/audio_classifier': {
-    setup: setupAudioClassifier,
-    cleanup: cleanupAudioClassifier,
-    label: 'Audio Classifier',
-  },
-  '/text/text_classifier': {
-    setup: setupTextClassifier,
-    cleanup: cleanupTextClassifier,
-    label: 'Text Classifier',
-  },
-  '/text/language_detector': {
-    setup: setupLanguageDetector,
-    cleanup: cleanupLanguageDetector,
-    label: 'Language Detector',
-  },
-  '/text/text_embedder': { setup: setupTextEmbedder, cleanup: cleanupTextEmbedder, label: 'Text Embedder' },
-  '/decision/decision_maker': { setup: setupDecisionMaker, cleanup: cleanupDecisionMaker, label: 'Decision Maker' },
-  '/decision/dino_game': { setup: setupDinoGame, cleanup: cleanupDinoGame, label: 'Decision Maker - Dino Game' },
-  '/retrieval/universal_embedder': {
-    setup: setupUniversalEmbedder,
-    cleanup: cleanupUniversalEmbedder,
-    label: 'Universal Embedder',
-  },
-  '/retrieval/semantic_retriever': {
-    setup: setupSemanticRetriever,
-    cleanup: cleanupSemanticRetriever,
-    label: 'Semantic Retriever',
   },
 };
 
@@ -173,7 +89,7 @@ let currentCleanup: (() => void) | undefined;
 async function applyRoute() {
   const hash = window.location.hash.slice(1);
 
-  // Handle root or invalid routes by defaulting to home. Changing
+  // Handle root or invalid routes by defaulting to the analyzer. Changing
   // the hash fires `hashchange`, which routes again with the valid hash.
   if (!hash || !routes[hash as keyof typeof routes]) {
     window.location.hash = '/vision/swimming_analyzer';
@@ -192,14 +108,9 @@ async function applyRoute() {
   mainContent.innerHTML = '';
 
   // Setup new task
-  const isHome = hash === '/home';
-  sidebar.style.display = isHome ? 'none' : '';
-  const mobileHeader = app.querySelector('.mobile-header') as HTMLElement;
-  if (mobileHeader) mobileHeader.style.display = isHome ? 'none' : '';
-
   await route.setup(mainContent);
   currentCleanup = route.cleanup;
-  document.title = `${route.label} - MediaPipe Web Task Demo`;
+  document.title = route.label;
 
   // Update active state in sidebar
   const links = sidebar.querySelectorAll('a');

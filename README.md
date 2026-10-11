@@ -1,53 +1,35 @@
-# MediaPipe Tasks Demo
+# Push Up Pose Analyzer
 
-Experience the power of on-device Machine Learning with MediaPipe Tasks. This
-demo showcases real-time audio, vision and text demos using CPU and GPU
-acceleration on Web.
+A single-purpose web app that analyzes push-up form from a video using MediaPipe's
+Pose Landmarker (BlazePose). Upload a video and it:
 
-Play with the demos here: https://google-ai-edge.github.io/mediapipe-samples-web/
+- Detects each repetition (down-up cycle) via elbow-angle and shoulder-height signals.
+- Scores form across four weighted dimensions: **depth**, **extension**, **alignment**, and **tempo**.
+- Produces a quality report with a total score, grade, and per-metric advice.
+- Marks every sampled frame with the pose skeleton and exports per-frame landmark
+  data (CSV + JSON) as a ZIP.
 
-## Supported Tasks
-
-### Vision
-- **Face Detection**: Detect faces in images and video.
-- **Face Landmarker**: Detect 478 3D face landmarks.
-- **Gesture Recognizer**: Recognize hand gestures (e.g., "Thumbs Up", "Peace").
-- **Hand Landmarker**: Track 21 3D hand landmarks for both hands.
-- **Holistic Landmarker**: Simultaneous tracking of face, hands, and pose.
-- **Image Classifier**: Categorize images into defined classes.
-- **Image Embedding**: Compare image similarity using vector embeddings.
-- **Image Segmentation**: Pixel-perfect masking of objects.
-- **Interactive Segmentation**: Click to segment specific objects of interest.
-- **Object Detection**: Detect multiple objects with bounding boxes.
-- **Pose Landmarker**: Full-body pose tracking with segmentation support.
-
-### Audio
-- **Audio Classifier**: Classify ambient sounds in real-time.
-
-### Decision
-- **Decision Maker**: Make decisions from text or JSON input using logic rules.
-- **Decision Maker - Dino Game**: Watch the Decision Maker play a runner game by choosing to jump, duck or wait.
-
-### Retrieval
-- **Semantic Retriever**: Index content into a vector store and retrieve it with natural-language queries.
-- **Universal Embedder**: Embed text and images into a shared vector space across modalities.
-
-### Text
-- **Language Detection**: Identify the language of input text.
-- **Text Classification**: Classify text sentiment (positive/negative).
-- **Text Embedding**: Semantic similarity comparison for text.
+All inference runs on-device in the browser; no video ever leaves your machine.
 
 ## Quick Start
 
-1.  **Clone the repository**
-2.  **Install dependencies**: `pnpm install`
-3.  **Run the app**: `pnpm dev`
-4.  **Open browser**: Navigate to the local URL (typically `http://localhost:5173`)
+1. **Install dependencies**: `pnpm install`
+2. **Run the app**: `pnpm dev`
+3. **Open** the local URL printed by Vite (typically `http://localhost:5174/push-up-pose-analyzer/`)
+
+## How it works
+
+- `src/tasks/swimming-analyzer.ts` — UI, video sampling, and landmark extraction.
+- `src/tasks/rep-segmentation.ts` — splits the pose stream into reps (lead-in, reps, lead-out).
+- `src/tasks/pushup-analysis.ts` — rule-based scoring of depth, extension, alignment, and tempo.
+
+The scoring rules are documented in the companion file `pushup-form-rules.md`.
 
 ## Testing
-
-We ensure robustness with a comprehensive End-to-End (E2E) test suite using Playwright.
 
 ```bash
 pnpm test
 ```
+
+Playwright end-to-end and unit tests cover rep segmentation, form scoring, and the
+upload/export flow.

@@ -1,13 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   testDir: './tests',
-  globalSetup: path.resolve(__dirname, './tests/global-setup.ts'),
   timeout: 120000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -15,7 +9,7 @@ export default defineConfig({
   reporter: 'html',
   snapshotPathTemplate: '{testDir}/__snapshots__/{arg}{ext}',
   use: {
-    baseURL: 'http://localhost:5174/mediapipe-samples-web/',
+    baseURL: 'http://localhost:5174/push-up-pose-analyzer/',
     trace: 'on-first-retry',
   },
   projects: [
@@ -58,7 +52,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5174/mediapipe-samples-web/',
+    url: 'http://localhost:5174/push-up-pose-analyzer/',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

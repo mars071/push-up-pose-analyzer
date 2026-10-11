@@ -8,27 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@mediapipe/tasks-audio':
-        specifier: ^1.1.0
-        version: 1.1.0
-      '@mediapipe/tasks-decision':
-        specifier: ^1.1.0
-        version: 1.1.0
-      '@mediapipe/tasks-retrieval':
-        specifier: ^1.1.0
-        version: 1.1.0
-      '@mediapipe/tasks-text':
-        specifier: ^1.1.0
-        version: 1.1.0
       '@mediapipe/tasks-vision':
         specifier: ^1.1.0
         version: 1.1.0
       jszip:
         specifier: ^3.10.2
         version: 3.10.2
-      mediapipe-od-ts:
-        specifier: 'link:'
-        version: 'link:'
     devDependencies:
       '@playwright/test':
         specifier: ^1.64.0
@@ -215,18 +200,6 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
-
-  '@mediapipe/tasks-audio@1.1.0':
-    resolution: {integrity: sha512-8Q6xVHr/8h20cIa2aS/QfAUmNeyWSLlfhzF/lD4uVMbfdIkjiEMSu64roPO+pbQsUswaw1krflvjfiHSgWpYOw==}
-
-  '@mediapipe/tasks-decision@1.1.0':
-    resolution: {integrity: sha512-WjbOVtj305Lzs5IwF5TOAMDlnW8T1ILQP6efZJGMv9WZgJquwDPZzrheIQve2Zrp7COGHrYuOhuuQF6z/bWOIg==}
-
-  '@mediapipe/tasks-retrieval@1.1.0':
-    resolution: {integrity: sha512-wRA7+yUiwCkKmAvCTovMbR8tZz/pvUvK6mKoEPXaiGu+2g1Hn2fn9aBxnuCJywlvp1ab4HwOi0HmEmieFn5F7Q==}
-
-  '@mediapipe/tasks-text@1.1.0':
-    resolution: {integrity: sha512-WUPq/BvSPTUhARI4y0txJBUHKLGIeVGCGyghyJL6CV2xzu/JW+3Uof1ZaKd3RTV1RawULhYbHDw9+SCsrgfGFA==}
 
   '@mediapipe/tasks-vision@1.1.0':
     resolution: {integrity: sha512-ZJqh0wMKOINorfSffvDAxzyO1//c+FiG3IkzOdNDnLqvBB3DbMfj0bB/tys2SNf9S914sgoIbIpF4HTOi336cg==}
@@ -812,14 +785,6 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
-
-  '@mediapipe/tasks-audio@1.1.0': {}
-
-  '@mediapipe/tasks-decision@1.1.0': {}
-
-  '@mediapipe/tasks-retrieval@1.1.0': {}
-
-  '@mediapipe/tasks-text@1.1.0': {}
 
   '@mediapipe/tasks-vision@1.1.0': {}
 

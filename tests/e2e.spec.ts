@@ -24,7 +24,7 @@ const __dirname = path.dirname(__filename);
 test.describe('Navigation & UI', () => {
   test.beforeEach(async ({ page }) => {
     // Start on a task route so the sidebar-based tests can navigate.
-    await page.goto('#/vision/object_detector');
+    await page.goto('#/vision/swimming_analyzer');
   });
 
   test('should redirect to the push-up pose analyzer by default', async ({ page }) => {
@@ -39,7 +39,7 @@ test.describe('Navigation & UI', () => {
 
   test('should have responsive sidebar', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('#/vision/object_detector');
+    await page.goto('#/vision/swimming_analyzer');
     // Check if sidebar nav is hidden (it might be hidden by CSS, let's check visibility)
     // .sidebar-nav display: none in media query
     const mobileSidebar = page.locator('.sidebar');

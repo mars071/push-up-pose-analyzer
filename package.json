@@ -15,13 +15,8 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@mediapipe/tasks-audio": "^1.1.0",
-    "@mediapipe/tasks-decision": "^1.1.0",
-    "@mediapipe/tasks-retrieval": "^1.1.0",
-    "@mediapipe/tasks-text": "^1.1.0",
     "@mediapipe/tasks-vision": "^1.1.0",
-    "jszip": "^3.10.2",
-    "mediapipe-od-ts": "link:"
+    "jszip": "^3.10.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
